@@ -1,0 +1,123 @@
+{
+  "name": "Ai chat agent",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        32,
+        224
+      ],
+      "id": "39785b93-6a94-45e7-972c-ffbb9db61438",
+      "name": "Google Gemini Chat Model",
+      "alwaysOutputData": false,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "de34podqqnbfeZSu",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "support",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -176,
+        32
+      ],
+      "id": "4db2c93f-5803-4e49-b7df-d3e849e47707",
+      "name": "Webhook",
+      "webhookId": "83344e2e-9f2c-4d86-be96-a9deb8a9ade3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional customer support agent of an e-commerce company.\n\nRules:\n• Reply like a human, not a robot\n• Be polite but natural\n• Keep answers short (4–6 lines max)\n• If the customer is angry, calm them\n• If product damaged → offer replacement\n• If delivery late → check shipping and reassure\n• Never say you are an AI\n\nCustomer message:\n{{$json[\"message\"]}}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        32,
+        32
+      ],
+      "id": "ea6228b9-bcca-4181-8d23-5d23312b8654",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"reply\": $json[\"text\"] } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        384,
+        32
+      ],
+      "id": "6563bf74-eae3-4927-87ab-878504dea031",
+      "name": "Respond to Webhook",
+      "alwaysOutputData": false,
+      "executeOnce": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "25d0eb89-b4e5-49f0-b0b9-205b6f4003e1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dd45d4d174a3096ab52fdd6b27239f939c2ca634a4c637fde84b831c2ed12d92"
+  },
+  "id": "n6QUksBZ1mNtp8Q8",
+  "tags": []
+}
