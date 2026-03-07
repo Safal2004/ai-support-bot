@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Good First Issues – JavaScript</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f4f8;
+            min-height: 100vh;
+            padding: 30px 16px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: #1a1a2e;
+        }
+
+        header p {
+            color: #555;
+            margin-top: 6px;
+            font-size: 0.95rem;
+        }
+
+        .search-bar {
+            display: flex;
+            max-width: 640px;
+            margin: 0 auto 24px;
+            gap: 8px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-bar input:focus { border-color: #4a6cff; }
+
+        .search-bar button {
+            padding: 12px 22px;
+            background: #4a6cff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .search-bar button:disabled {
+            background: #9aabff;
+            cursor: not-allowed;
+        }
+
+        #status {
+            text-align: center;
+            color: #555;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            min-height: 20px;
+        }
+
+        .results {
+            display: grid;
+            gap: 16px;
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 18px 20px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        }
+
+        .card-repo {
+            font-size: 0.8rem;
+            color: #4a6cff;
+            font-weight: bold;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .card-repo .stars {
+            color: #888;
+            font-weight: normal;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .card-title a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .card-title a:hover { text-decoration: underline; }
+
+        .card-meta {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .label {
+            background: #e8f0fe;
+            color: #4a6cff;
+            border-radius: 20px;
+            padding: 2px 10px;
+            font-size: 0.75rem;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 32px;
+            color: #4a6cff;
+            font-size: 0.9rem;
+            text-decoration: none;
+        }
+
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🔍 Good First Issues · JavaScript</h1>
+    <p>Find beginner-friendly issues in popular JavaScript repositories (stars &gt; 500)</p>
+</header>
+
+<div class="search-bar">
+    <input
+        id="query"
+        type="text"
+        placeholder="Additional keywords (optional)"
+        aria-label="Additional search keywords"
+    />
+    <button id="searchBtn" onclick="doSearch()">Search</button>
+</div>
+
+<div id="status"></div>
+<div class="results" id="results"></div>
+
+<a class="back-link" href="index.html">← Back to AI Support Chat</a>
+
+<script>
+    const BASE_QUERY = 'label:"good first issue" language:JavaScript stars:>500 state:open';
+
+    async function doSearch() {
+        const extra = document.getElementById("query").value.trim();
+        const q = extra ? `${BASE_QUERY} ${extra}` : BASE_QUERY;
+
+        const btn = document.getElementById("searchBtn");
+        const status = document.getElementById("status");
+        const resultsEl = document.getElementById("results");
+
+        btn.disabled = true;
+        status.textContent = "Searching…";
+        resultsEl.innerHTML = "";
+
+        try {
+            const url =
+                "https://api.github.com/search/issues?per_page=30&sort=created&order=desc&q=" +
+                encodeURIComponent(q);
+
+            const res = await fetch(url, {
+                headers: { Accept: "application/vnd.github+json" }
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `GitHub API error: ${res.status}`);
+            }
+
+            const data = await res.json();
+
+            if (!data.items || data.items.length === 0) {
+                status.textContent = "No issues found. Try different keywords.";
+                return;
+            }
+
+            status.textContent = `Showing ${data.items.length} result${data.items.length !== 1 ? "s" : ""} (of ${data.total_count.toLocaleString()} total)`;
+
+            // Collect unique repo URLs to avoid duplicate requests
+            const uniqueRepoUrls = [...new Set(data.items.map((i) => i.repository_url))];
+            const repoStarCache = {};
+
+            for (const repoUrl of uniqueRepoUrls) {
+                try {
+                    const repoRes = await fetch(repoUrl, {
+                        headers: { Accept: "application/vnd.github+json" }
+                    });
+                    if (repoRes.ok) {
+                        const repo = await repoRes.json();
+                        repoStarCache[repoUrl] = repo.stargazers_count.toLocaleString();
+                    }
+                } catch (_) {}
+            }
+
+            const HEX_COLOR = /^[0-9a-fA-F]{6}$/;
+
+            const cards = data.items.map((issue) => {
+                const repoFullName = issue.repository_url.replace(
+                    "https://api.github.com/repos/",
+                    ""
+                );
+                const stars = repoStarCache[issue.repository_url] ?? "–";
+
+                const labels = (issue.labels || [])
+                    .map((l) => {
+                        const color = HEX_COLOR.test(l.color) ? l.color : "4a6cff";
+                        return (
+                            `<span class="label" style="background:#${color}22;color:#${color}">` +
+                            escapeHtml(l.name) +
+                            "</span>"
+                        );
+                    })
+                    .join(" ");
+
+                const createdAt = new Date(issue.created_at).toLocaleDateString(
+                    undefined,
+                    { year: "numeric", month: "short", day: "numeric" }
+                );
+
+                return `
+                    <div class="card">
+                        <div class="card-repo">
+                            <a href="https://github.com/${escapeHtml(repoFullName)}" target="_blank" rel="noopener noreferrer">
+                                ${escapeHtml(repoFullName)}
+                            </a>
+                            <span class="stars">⭐ ${stars}</span>
+                        </div>
+                        <div class="card-title">
+                            <a href="${escapeHtml(issue.html_url)}" target="_blank" rel="noopener noreferrer">
+                                #${issue.number} – ${escapeHtml(issue.title)}
+                            </a>
+                        </div>
+                        <div class="card-meta">
+                            ${labels}
+                            <span>Opened ${createdAt}</span>
+                            <span>💬 ${issue.comments} comment${issue.comments !== 1 ? "s" : ""}</span>
+                        </div>
+                    </div>`;
+            });
+
+            resultsEl.innerHTML = cards.join("");
+        } catch (err) {
+            status.textContent = "Error: " + err.message;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    // Run on page load
+    doSearch();
+</script>
+
+</body>
+</html>

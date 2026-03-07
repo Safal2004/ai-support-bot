@@ -58,6 +58,16 @@
             border:none;
             cursor:pointer;
         }
+        .search-link{
+            text-align:center;
+            padding:8px;
+            font-size:0.8rem;
+        }
+        .search-link a{
+            color:#4a6cff;
+            text-decoration:none;
+        }
+        .search-link a:hover{ text-decoration:underline; }
     </style>
 </head>
 
@@ -66,14 +76,16 @@
 <div class="chat">
     <div class="header">🛍️ AI Support Agent</div>
 
-```
-<div class="messages" id="messages"></div>
+    <div class="messages" id="messages"></div>
 
-<div class="input">
-    <input id="msg" placeholder="Type your message..." />
-    <button onclick="send()">Send</button>
-</div>
-```
+    <div class="input">
+        <input id="msg" placeholder="Type your message..." />
+        <button onclick="send()">Send</button>
+    </div>
+
+    <div class="search-link">
+        <a href="search.html">🔍 Find Good First Issues (JavaScript)</a>
+    </div>
 
 </div>
 
